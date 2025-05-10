@@ -1,6 +1,7 @@
 import pytest
 from .pages.product_page import ProductPage
 from .pages.login_page import LoginPage
+import time
 
 
 @pytest.mark.regression
@@ -66,3 +67,30 @@ def test_guest_can_go_to_login_page_from_product_page(browser):
     page.go_to_login_page()
     login_page = LoginPage(browser, browser.current_url)
     login_page.should_be_login_page()
+
+@pytest.mark.login_guest
+class TestUserAddToBasketFromProductPage:
+    @pytest.fixture(autouse=True)
+    def setup(self, browser):
+        link = "http://selenium1py.pythonanywhere.com/accounts/login/"
+        page = LoginPage(browser, link)
+        page.open()
+        email = str(time.time()) + "@fakemail.org"
+        password = str(time.time()) + "dsafa"
+        page.register_new_user(email, password)
+        page.should_be_authorized_user()
+        self.link = "http://selenium1py.pythonanywhere.com/en-gb/catalogue/the-city-and-the-stars_95/"
+        self.browser = browser
+
+    def test_user_can_add_product_to_basket(self):
+        page = ProductPage(self.browser, self.link)
+        page.open()
+        product_name = page.get_product_name()
+        product_price = page.get_product_price()
+        page.add_to_basket()
+        page.should_be_product_added_message(product_name, product_price)
+
+    def test_user_cant_see_success_message(self, browser):
+        page = ProductPage(self.browser, self.link)
+        page.open()
+        page.should_not_be_success_message()
